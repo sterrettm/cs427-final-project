@@ -1,0 +1,17 @@
+{
+  "name": "cs427-final",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "argon2": "^0.28.5"
+  },
+  "devDependencies": {
+    "electron": "^17.1.0"
+  }
+}
