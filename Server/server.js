@@ -46,14 +46,15 @@ app.get('/download', function(req, res){
     if (validUser != undefined){
 
         if ('ciphertext' in accountData[validUser]){
-            var rawData = accountData.validUser
+            var rawData = accountData[validUser]
             var sendData = {ciphertext: rawData.ciphertext, salt: rawData.kdfSalt}
-            
-            res.json(sendData)
+            res.write(JSON.stringify(sendData))
+            res.end()
         }else{
-            // TODO I'm just gonna send 404, reconsider this
-            res.writeHead(404)
-            res.end();
+            var rawData = accountData[validUser]
+            var sendData = {salt: rawData.kdfSalt}
+            res.write(JSON.stringify(sendData))
+            res.end()
         }
     }else{
         // TODO error better
@@ -64,14 +65,17 @@ app.get('/download', function(req, res){
 
 app.post('/upload', function(req, res){
     var validUser = auth.validateUser(tokens, req, res)
+    console.log("uploading user data...")
     if (validUser != undefined){
-
-        var blob = req.body
+        
         var ctxt = req.body.ciphertext
         
         // TODO I don't like just wiping out all previous data,
         // but I am not quite sure how I would do this better
-        accountData.validUser.ciphertext = ctxt
+        accountData[validUser].ciphertext = ctxt
+        
+        res.writeHead(200)
+        res.end()
     }else{
         // TODO error better
         res.writeHead(403)

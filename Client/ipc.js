@@ -10,10 +10,10 @@ if (!rejectUnauthorized){
 }
 
 async function load_data(event, args){
-    console.log("load_data")
     var username = (await session.defaultSession.cookies.get({ name: "username" }))[0].value
+    var password = args.password
     
-    var success = await enc.loadPasswordFile(username)
+    var success = await enc.loadPasswordFile(username, password, args.remote)
     
     if (success){
         event.sender.send('load_data_success',{})
@@ -22,7 +22,28 @@ async function load_data(event, args){
     }
 }
 
+async function save_data(event, args){
+    var username = (await session.defaultSession.cookies.get({ name: "username" }))[0].value
+    var success = await enc.savePasswordFile(username, args.remote)
+}
+
+async function password_list(event, args){
+    var data = enc.passwordList()
+    
+    if (data != undefined){
+        event.sender.send('password_list_success',data)
+    }else{
+        event.sender.send('password_list_fail',{})
+    }
+}
+
+async function add_password(event, args){
+    enc.addPassword(args.hostname, args.username, args.password)
+    event.sender.send("add_password_success", {})
+}
+
 async function login_attempt(event, args){
+    
     var username = args.username
     var password = args.password
     
@@ -125,6 +146,9 @@ function ipcGenerator(ipcMain){
     ipcMain.on("get_cookie", (event, arg) => {get_cookie(event, arg)})
     ipcMain.on("set_cookie", (event, arg) => {set_cookie(event, arg)})
     ipcMain.on("load_data", (event, arg) => {load_data(event, arg)})
+    ipcMain.on("add_password", (event, arg) => {add_password(event, arg)})
+    ipcMain.on("password_list", (event, arg) => {password_list(event, arg)})
+    ipcMain.on("save_data", (event, arg) => {save_data(event, arg)})
 }
 
 /*ipcExport = {signup_attempt: signup_attempt, login_attempt: login_attempt}
