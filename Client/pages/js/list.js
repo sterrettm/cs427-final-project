@@ -17,7 +17,7 @@ function savePasswords(){
     ipcRenderer.send('save_data', {remote: getRemote()})
 }
 
-function newPasswordEntry(hostname, username, password){
+/*function newPasswordEntry(hostname, username, password){
     var base = document.createElement("li")
     var hostnameE = document.createElement("b")
     var usernameE = document.createElement("p")
@@ -30,6 +30,14 @@ function newPasswordEntry(hostname, username, password){
     base.appendChild(hostnameE)
     base.appendChild(usernameE)
     base.appendChild(passwordE)
+    
+    return base
+}*/
+
+function newPasswordEntry(hostname, username, password){
+    var htmlString = handlebars('passwordEntry.html', {hostname: hostname, username: username, password: password})
+    var base = document.createElement("div")
+    base.innerHTML = htmlString
     
     return base
 }

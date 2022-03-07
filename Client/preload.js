@@ -1,6 +1,3 @@
-// Please,
-// for both my and your sanity,
-// never change this part
 
 const { contextBridge, ipcRenderer } = require('electron')
 
@@ -10,5 +7,3 @@ contextBridge.exposeInMainWorld( 'ipcRenderer', {
     sendSync: ( channel, data ) => ipcRenderer.sendSync( channel, data ),
     
 } )
-
-// You can change stuff below here

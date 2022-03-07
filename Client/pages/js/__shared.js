@@ -19,3 +19,9 @@ window.addEventListener('load', (event) => {
         usernameText.innerText = getCookie("username")
     }
 });
+
+function handlebars(template, args){
+    var htmlString = ipcRenderer.sendSync('use_template', {template: template, args: args})
+    console.log(htmlString)
+    return htmlString
+}

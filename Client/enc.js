@@ -236,7 +236,7 @@ async function decrypt(remoteData, localData, masterPassword){
     }else{
         // Initialize a basic empty password store
         console.log("Info: No password store found, empty one created")
-        finalData = {passwords: []}
+        finalData = {passwords: {}}
     }
     
     passwordData = finalData
@@ -303,75 +303,32 @@ function objIntersection(obj1, obj2){
     return result
 }
 
-function combineLists(localPlain, remotePlain){
-    // Part 1: Convert each list to a dictionary
-    var localDict = {}
-    for (key in localPlain.passwords){
-        var entry = localPlain.passwords[key]
-        var dictName = entry.username + "@" + entry.hostname 
-        
-        // If we already have found this username/hostname pair
-        if (dictName in localDict){
-            // Replace it with the current version if it is newer
-            if (entry.lastModified > localDict[dictName].lastModified){
-                localDict[dictName] = entry
-            }
-        }else{
-            localDict[dictName] = {}
-            localDict[dictName] = entry
-        }
-    }
-    
-    var remoteDict = {}
-    for (key in remotePlain.passwords){
-        var entry = remotePlain.passwords[key]
-        var dictName = entry.username + "@" + entry.hostname 
-        
-        // If we already have found this username/hostname pair
-        if (dictName in remoteDict){
-            // Replace it with the current version if it is newer
-            if (entry.lastModified > remoteDict[dictName].lastModified){
-                remoteDict[dictName] = entry
-            }
-        }else{
-            remoteDict[dictName] = {}
-            remoteDict[dictName] = entry
-        }
-    }
-    
-    // Part 2: Combine the two lists
-    var resultDict = objUnion(localDict, remoteDict)
-    var intersection = objIntersection(localDict, remoteDict)
+function combineLists(localDict, remoteDict){
+    var resultDict = {passwords: objUnion(localDict.passwords, remoteDict.passwords)}
+    var intersection = objIntersection(localDict.passwords, remoteDict.passwords)
     
     
     for (interKey in intersection){
         var key = intersection[interKey]
         
-        if (localDict[key].lastModified > remoteDict[key].lastModified){
-            resultDict[key] = localDict[key]
+        if (localDict.passwords[key].lastModified > remoteDict.passwords[key].lastModified){
+            resultDict.passwords[key] = localDict.passwords[key]
         }else{
-            resultDict[key] = remoteDict[key]
+            resultDict.passwords[key] = remoteDict.passwords[key]
         }
     }
-
-    // Part 3: Convert back to the form {passwords: [...]}
-    var result = {passwords: []}
     
-    for (key in resultDict){
-        result.passwords.push(resultDict[key])
-    }
-    
-    return result
+    return resultDict
 }
 
 function addPassword(hostname, username, password){
     var currentDate = Date.now()
     
+    var newKey = username + "@" + hostname 
     var newEntry = {hostname: hostname, username: username, password: password, lastModified: currentDate}
     
-    // TODO if the same hostname/username combination is already in the dataset, overwrite it instead of just adding this
-    
-    passwordData.passwords.push(newEntry)
+    passwordData.passwords[newKey] = {}
+    passwordData.passwords[newKey] = newEntry
 }
 
 function passwordList(){

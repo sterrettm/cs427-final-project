@@ -1,6 +1,7 @@
 const https = require('https')
 const process = require('process')
 const enc = require('./enc')
+const rendering = require('./rendering')
 const { session } = require('electron')
 
 args = process.argv.slice(2)
@@ -149,6 +150,15 @@ function _setCookies(cookiesList){
     }
 }
 
+function use_template(event, args){
+    var template = args.template
+    var args = args.args
+    
+    var htmlString = rendering.useTemplate(template, args)
+    
+    event.returnValue = htmlString
+}
+
 function ipcGenerator(ipcMain){
     ipcMain.on("login_attempt", (event, arg) => {login_attempt(event, arg)})
     ipcMain.on("signup_attempt", (event, arg) => {signup_attempt(event, arg)})
@@ -159,6 +169,7 @@ function ipcGenerator(ipcMain){
     ipcMain.on("password_list", (event, arg) => {password_list(event, arg)})
     ipcMain.on("save_data", (event, arg) => {save_data(event, arg)})
     ipcMain.on("is_remote", (event, arg) => {is_remote(event, arg)})
+    ipcMain.on("use_template", (event, arg) => {use_template(event, arg)})
 }
 
 /*ipcExport = {signup_attempt: signup_attempt, login_attempt: login_attempt}
