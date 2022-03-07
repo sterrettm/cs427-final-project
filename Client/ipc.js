@@ -9,6 +9,12 @@ if (!rejectUnauthorized){
     console.log("MAJOR WARNING: Permitting self-signed certificates")
 }
 
+var remote = false
+
+function is_remote(event, args){
+    event.returnValue = remote
+}
+
 async function load_data(event, args){
     var username = (await session.defaultSession.cookies.get({ name: "username" }))[0].value
     var password = args.password
@@ -61,6 +67,9 @@ async function login_attempt(event, args){
             // not 100% sure where I should put that
             
             _setCookies(res.headers['set-cookie'])
+            
+            // We are now online, record this
+            remote = true
             
             event.sender.send('login_success', res.statusCode)
         }else{
@@ -149,6 +158,7 @@ function ipcGenerator(ipcMain){
     ipcMain.on("add_password", (event, arg) => {add_password(event, arg)})
     ipcMain.on("password_list", (event, arg) => {password_list(event, arg)})
     ipcMain.on("save_data", (event, arg) => {save_data(event, arg)})
+    ipcMain.on("is_remote", (event, arg) => {is_remote(event, arg)})
 }
 
 /*ipcExport = {signup_attempt: signup_attempt, login_attempt: login_attempt}

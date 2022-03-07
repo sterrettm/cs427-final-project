@@ -17,7 +17,6 @@ var aesKey = undefined
 
 async function getMasterKey(salt, password){
     var masterKey = await argon2.hash(password, {type: argon2.argon2id, salt: salt, raw: true})
-    console.log("Master Key: " + masterKey.toString('base64'))
     return masterKey
 }
 
@@ -34,25 +33,31 @@ function _syncRequest(options){
 async function loadLocal(username, path){
     try {
         // TODO building up the path like this is bad, do something better
-        var rawData = await fs.readFile(path + username + ".json")
+        var rawData = fs.readFileSync(path + username + ".json")
         var realData = JSON.parse(rawData)
+        return realData
         
-        if (username in realData){
-            return realData[username]
-        }else{
-            return {}
-        }
     } catch (err){
         return {}
     }
 }
 
 async function saveLocal(username, data, path){
-    
+    try {
+        // TODO building up the path like this is bad, do something better
+        var writeData = JSON.stringify(data)
+        
+        fs.mkdirSync(path, {recursive: true})
+        // TODO This works, but await fs.writeFile doesn't work here. Figure out why that is
+        fs.writeFileSync(path + username + ".json", writeData)
+        
+    } catch (err){
+        // TODO real error
+        return {}
+    }
 }
 
 async function saveRemote(username, token, data, hostname = "localhost"){
-    console.log("yes...")
     var options = {
         host: hostname,
         path: "/upload",
@@ -65,12 +70,11 @@ async function saveRemote(username, token, data, hostname = "localhost"){
         }
     }
     
-    var res = new Promise(function (resolve, reject){
+    var res = await new Promise(function (resolve, reject){
         var req = https.request(options, res => {
             resolve(res)
         })
         req.write(JSON.stringify(data))
-        console.log("yes...")
         req.end()
     })
     
@@ -124,14 +128,29 @@ async function loadRemote(username, token, hostname = "localhost"){
     
 }
 
+function _numericArrayNotEqual(a1, a2){
+    if (a1.length != a2.length){
+        return true
+    }else{
+        for (key in a1){
+            if (a1[key] != a2[key]){
+                return true
+            }
+        }
+    }
+    
+    return false
+}
+
 function getSalt(remoteData, localData){
     if ("salt" in remoteData && "salt" in localData){
         var remoteSalt = remoteData.salt
         var localSalt = localData.salt
-        if (remoteSalt != localSalt){
+        if (_numericArrayNotEqual(remoteSalt.data, localSalt.data)){
             // Very bad
             // TODO figure out what on earth to do here
             console.log("Error: Server-client salt mismatch")
+            console.log(JSON.stringify(remoteSalt) + "\n---\n" + JSON.stringify(localSalt))
             return undefined
         }else{
             return remoteSalt
@@ -204,9 +223,8 @@ async function decrypt(remoteData, localData, masterPassword){
     if ('ciphertext' in localData && 'ciphertext' in remoteData){
         var localPlain = decryptData(localData.ciphertext, masterKey)
         var remotePlain = decryptData(remoteData.ciphertext, masterKey)
-        
-        // TODO handle conflicts between these 
-        finalData = remotePlain
+         
+        finalData = combineLists(localPlain, remotePlain)
     }else if ('ciphertext' in localData){
         var localPlain = decryptData(localData.ciphertext, masterKey)
         finalData = localPlain
@@ -221,8 +239,6 @@ async function decrypt(remoteData, localData, masterPassword){
         finalData = {passwords: []}
     }
     
-    console.log(finalData)
-    
     passwordData = finalData
     
     // Return true when succesful
@@ -231,7 +247,7 @@ async function decrypt(remoteData, localData, masterPassword){
 
 async function loadPasswordFile(username, masterPassword, remote){
     
-    var remoteData = undefined
+    var remoteData = {}
     
     if (remote){
         var token = (await session.defaultSession.cookies.get({ name: "token" }))[0].value
@@ -254,39 +270,112 @@ async function loadPasswordFile(username, masterPassword, remote){
 async function savePasswordFile(username, remote){
     // A lot of stuff used here is setup in loadPasswordFile and stored in globals
     // TODO reconsider that
-    var token = (await session.defaultSession.cookies.get({ name: "token" }))[0].value
     
     var ctxt = encryptData(passwordData, aesKey)
     
     var result = {salt: kdfSalt, ciphertext: ctxt}
     
     if (remote){
+        var token = (await session.defaultSession.cookies.get({ name: "token" }))[0].value
         saveRemote(username, token, result, "localhost")
     }
     saveLocal(username, result, "./data/")
 }
 
+function objUnion(obj1, obj2){
+    var result = {}
+    for (key in obj1){
+        result[key] = obj1[key]
+    }
+    for (key in obj2){
+        result[key] = obj2[key]
+    }
+    return result
+}
+
+function objIntersection(obj1, obj2){
+    var result = []
+    for (key in obj1){
+        if (key in obj2){
+            result.push(key)
+        }
+    }
+    return result
+}
+
+function combineLists(localPlain, remotePlain){
+    // Part 1: Convert each list to a dictionary
+    var localDict = {}
+    for (key in localPlain.passwords){
+        var entry = localPlain.passwords[key]
+        var dictName = entry.username + "@" + entry.hostname 
+        
+        // If we already have found this username/hostname pair
+        if (dictName in localDict){
+            // Replace it with the current version if it is newer
+            if (entry.lastModified > localDict[dictName].lastModified){
+                localDict[dictName] = entry
+            }
+        }else{
+            localDict[dictName] = {}
+            localDict[dictName] = entry
+        }
+    }
+    
+    var remoteDict = {}
+    for (key in remotePlain.passwords){
+        var entry = remotePlain.passwords[key]
+        var dictName = entry.username + "@" + entry.hostname 
+        
+        // If we already have found this username/hostname pair
+        if (dictName in remoteDict){
+            // Replace it with the current version if it is newer
+            if (entry.lastModified > remoteDict[dictName].lastModified){
+                remoteDict[dictName] = entry
+            }
+        }else{
+            remoteDict[dictName] = {}
+            remoteDict[dictName] = entry
+        }
+    }
+    
+    // Part 2: Combine the two lists
+    var resultDict = objUnion(localDict, remoteDict)
+    var intersection = objIntersection(localDict, remoteDict)
+    
+    
+    for (interKey in intersection){
+        var key = intersection[interKey]
+        
+        if (localDict[key].lastModified > remoteDict[key].lastModified){
+            resultDict[key] = localDict[key]
+        }else{
+            resultDict[key] = remoteDict[key]
+        }
+    }
+
+    // Part 3: Convert back to the form {passwords: [...]}
+    var result = {passwords: []}
+    
+    for (key in resultDict){
+        result.passwords.push(resultDict[key])
+    }
+    
+    return result
+}
+
 function addPassword(hostname, username, password){
     var currentDate = Date.now()
     
-    var entry = {hostname: hostname, username: username, password: password, lastModified: currentDate}
+    var newEntry = {hostname: hostname, username: username, password: password, lastModified: currentDate}
     
-    passwordData.passwords.push(entry)
+    // TODO if the same hostname/username combination is already in the dataset, overwrite it instead of just adding this
+    
+    passwordData.passwords.push(newEntry)
 }
 
 function passwordList(){
     return passwordData
 }
 
-function tester(){
-    var key = crypto.randomBytes(32)
-    var testStuff = {test: "Hello!", more: {a: "Apples", o: "Oranges"}}
-    
-    ctxt = encryptData(testStuff, key)
-    console.log(ctxt)
-    ptxt = decryptData(ctxt, key)
-    
-    console.log(ptxt)
-}
-
-module.exports = {loadPasswordFile: loadPasswordFile, savePasswordFile: savePasswordFile, addPassword: addPassword, passwordList: passwordList, tester: tester}
+module.exports = {loadPasswordFile: loadPasswordFile, savePasswordFile: savePasswordFile, addPassword: addPassword, passwordList: passwordList}

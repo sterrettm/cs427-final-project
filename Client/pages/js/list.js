@@ -9,20 +9,42 @@ function getPasswordList(){
             resolve({})
         })
         
-        ipcRenderer.send('password_list', {remote: true})
+        ipcRenderer.send('password_list', {remote: getRemote()})
     })
 }
 
 function savePasswords(){
-    ipcRenderer.send('save_data', {remote: true})
+    ipcRenderer.send('save_data', {remote: getRemote()})
+}
+
+function newPasswordEntry(hostname, username, password){
+    var base = document.createElement("li")
+    var hostnameE = document.createElement("b")
+    var usernameE = document.createElement("p")
+    var passwordE = document.createElement("p")
+    
+    hostnameE.innerText = "Website: " + hostname
+    usernameE.innerText = "Username: " + username
+    passwordE.innerText = "Password: " + password
+    
+    base.appendChild(hostnameE)
+    base.appendChild(usernameE)
+    base.appendChild(passwordE)
+    
+    return base
 }
 
 window.onload = async function(e){
     var passwordData = await getPasswordList()
     
+    var passwordList = document.getElementById("passwordList")
     for (index in passwordData.passwords){
         var entry = passwordData.passwords[index]
         console.log("Entry: " + JSON.stringify(entry))
+        
+        var newEntry = newPasswordEntry(entry.hostname, entry.username, entry.password)
+        passwordList.appendChild(newEntry)
+        
     }
     
     document.getElementById("savePasswords").addEventListener("click", savePasswords)

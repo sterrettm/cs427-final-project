@@ -13,13 +13,12 @@ function getData(){
     
         
     // TODO make remote correct here to allow offline login to work correctly
-    ipcRenderer.send('load_data', {password: password, remote: true})
+    ipcRenderer.send('load_data', {password: password, remote: getRemote()})
 }
 
 // Why do we setup handlers in JS instead of HTML?
 // To satisfy the Context-Security-Policy
 
 window.onload = function(e){
-    document.getElementById("usernameText").innerText = getCookie("username")
     document.getElementById("keyEnterButton").addEventListener("click", getData)
 }
