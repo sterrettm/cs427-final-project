@@ -11,6 +11,8 @@ if (!rejectUnauthorized){
     console.log("MAJOR WARNING: Permitting self-signed certificates")
 }
 
+const customCert = fs.readFileSync("./certs/cert.pem")
+
 var passwordData = {}
 var kdfSalt = undefined
 var aesKey = undefined
@@ -18,16 +20,6 @@ var aesKey = undefined
 async function getMasterKey(salt, password){
     var masterKey = await argon2.hash(password, {type: argon2.argon2id, salt: salt, raw: true})
     return masterKey
-}
-
-// TODO maybe get rid of this and move its logic back into the one place it is called
-function _syncRequest(options){
-    return new Promise(function (resolve, reject){
-        var req = https.request(options, res => {
-            resolve(res)
-        })
-        req.end()
-    })
 }
 
 async function loadLocal(username, path){
@@ -67,7 +59,8 @@ async function saveRemote(username, token, data, hostname = "localhost"){
         headers:{
             'Cookie': ("username="+username+"; token=" + JSON.stringify(token)),
             'Content-Type': "application/json"
-        }
+        },
+        ca: [customCert]
     }
     
     var res = await new Promise(function (resolve, reject){
@@ -96,7 +89,8 @@ async function loadRemote(username, token, hostname = "localhost"){
         rejectUnauthorized: rejectUnauthorized,
         headers:{
             'Cookie': ("username="+username+"; token=" + JSON.stringify(token))
-        }
+        },
+        ca: [customCert]
     }
     
     var res = await (new Promise(function (resolve, reject){

@@ -3,6 +3,9 @@ const process = require('process')
 const enc = require('./enc')
 const rendering = require('./rendering')
 const { session } = require('electron')
+const fs = require('fs')
+
+const customCert = fs.readFileSync("./certs/cert.pem")
 
 args = process.argv.slice(2)
 rejectUnauthorized = args[0] !== "BREAKALLSECURITY"
@@ -59,7 +62,8 @@ async function login_attempt(event, args){
         path: "/login",
         method: "POST",
         port: 32433,
-        rejectUnauthorized: rejectUnauthorized
+        rejectUnauthorized: rejectUnauthorized,
+        ca: [customCert]
     }
     
     var req = https.request(options, res => {
@@ -92,7 +96,8 @@ function signup_attempt(event, args){
         path: "/signup",
         method: "POST",
         port: 32433,
-        rejectUnauthorized: rejectUnauthorized
+        rejectUnauthorized: rejectUnauthorized,
+        ca: [customCert]
     }
     
     var req = https.request(options, res => {
