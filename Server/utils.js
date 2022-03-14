@@ -4,7 +4,7 @@ function loadAccountData(file){
     try {
         rawData = fs.readFileSync(file, 'utf8')
     } catch (err) {
-        console.log("WARNING: Account data file could not be loaded.\n" + err)
+        console.log("Info: No account data file was found, a new one will be created\n")
         return {}
     }
     
