@@ -1,24 +1,12 @@
 
 function savePasswords(){
-    ipcRenderer.send('save_data', {remote: getRemote()})
+    ipcRenderer.sendSync('save_data', {remote: getRemote()})
 }
 
-/*function newPasswordEntry(hostname, username, password){
-    var base = document.createElement("li")
-    var hostnameE = document.createElement("b")
-    var usernameE = document.createElement("p")
-    var passwordE = document.createElement("p")
-    
-    hostnameE.innerText = "Website: " + hostname
-    usernameE.innerText = "Username: " + username
-    passwordE.innerText = "Password: " + password
-    
-    base.appendChild(hostnameE)
-    base.appendChild(usernameE)
-    base.appendChild(passwordE)
-    
-    return base
-}*/
+function logoutButton(){
+    ipcRenderer.sendSync('logout', {})
+    window.location.href = "./index.html"
+}
 
 function newPasswordEntry(hostname, username, password, key){
     var htmlString = handlebars('passwordEntry.html', {hostname: hostname, username: username, password: password, key: key})
@@ -41,4 +29,5 @@ window.onload = async function(e){
     }
     
     document.getElementById("savePasswords").addEventListener("click", savePasswords)
+    document.getElementById("logoutButton").addEventListener("click", logoutButton)
 }

@@ -35,6 +35,8 @@ async function load_data(event, args){
 async function save_data(event, args){
     var username = (await session.defaultSession.cookies.get({ name: "username" }))[0].value
     var success = await enc.savePasswordFile(username, args.remote)
+    
+    event.returnValue = true
 }
 
 async function password_list(event, args){
@@ -180,6 +182,15 @@ function use_template(event, args){
     event.returnValue = htmlString
 }
 
+async function logout(event, args){
+    remote = false
+    
+    // Throw away all session cookies and such
+    var x = await session.defaultSession.clearStorageData([], (data) => {})
+    
+    event.returnValue = true
+}
+
 function ipcGenerator(ipcMain){
     ipcMain.on("login_attempt", (event, arg) => {login_attempt(event, arg)})
     ipcMain.on("signup_attempt", (event, arg) => {signup_attempt(event, arg)})
@@ -193,6 +204,7 @@ function ipcGenerator(ipcMain){
     ipcMain.on("save_data", (event, arg) => {save_data(event, arg)})
     ipcMain.on("is_remote", (event, arg) => {is_remote(event, arg)})
     ipcMain.on("use_template", (event, arg) => {use_template(event, arg)})
+    ipcMain.on("logout", (event, arg) => {logout(event, arg)})
 }
 
 /*ipcExport = {signup_attempt: signup_attempt, login_attempt: login_attempt}
