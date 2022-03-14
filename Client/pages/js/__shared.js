@@ -25,3 +25,38 @@ function handlebars(template, args){
     console.log(htmlString)
     return htmlString
 }
+
+_paramDict = undefined
+
+function paramDict(){
+    
+    if (_paramDict == undefined){
+    
+        var query = window.location.search.slice(1)
+        var queries = query.split("&")
+
+        var queryData = {}
+        for (key in queries) {
+            var splits = queries[key].split("=")
+            queryData[splits[0]] = splits[1]
+        }
+        _paramDict = queryData
+    }
+    
+    return _paramDict
+}
+
+function getPasswordList(){
+    return new Promise(function (resolve, reject){
+        ipcRenderer.on('password_list_success', (event, arg) => {
+            resolve(arg)
+        })
+        
+        ipcRenderer.on('password_list_fail', (event, arg) => {
+            // TODO fail properly here
+            resolve({})
+        })
+        
+        ipcRenderer.send('password_list', {remote: getRemote()})
+    })
+}

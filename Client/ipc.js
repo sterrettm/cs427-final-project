@@ -52,6 +52,22 @@ async function add_password(event, args){
     event.sender.send("add_password_success", {})
 }
 
+async function delete_password(event, args){
+    if (enc.deletePassword(args.key)){
+        event.sender.send("delete_password_success", {})
+    }else{
+        event.sender.send("delete_password_fail", {})
+    }
+}
+
+async function edit_password(event, args){
+    if (enc.editPassword(args.key, args.newHostname, args.newUsername, args.newPassword)){
+        event.sender.send("edit_password_success", {})
+    }else{
+        event.sender.send("edit_password_fail", {})
+    }
+}
+
 async function login_attempt(event, args){
     
     var username = args.username
@@ -171,6 +187,8 @@ function ipcGenerator(ipcMain){
     ipcMain.on("set_cookie", (event, arg) => {set_cookie(event, arg)})
     ipcMain.on("load_data", (event, arg) => {load_data(event, arg)})
     ipcMain.on("add_password", (event, arg) => {add_password(event, arg)})
+    ipcMain.on("delete_password", (event, arg) => {delete_password(event, arg)})
+    ipcMain.on("edit_password", (event, arg) => {edit_password(event, arg)})
     ipcMain.on("password_list", (event, arg) => {password_list(event, arg)})
     ipcMain.on("save_data", (event, arg) => {save_data(event, arg)})
     ipcMain.on("is_remote", (event, arg) => {is_remote(event, arg)})

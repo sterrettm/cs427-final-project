@@ -265,6 +265,18 @@ async function savePasswordFile(username, remote){
     // A lot of stuff used here is setup in loadPasswordFile and stored in globals
     // TODO reconsider that
     
+    // If we are remote, delete tombstones before saving. This will delete serverside when the save happens
+    // If not remote, we have to keep them so that it triggers the delete next time we save when connected to the server
+    if (remote){
+        for (key in passwordData.passwords){
+            var entry = passwordData.passwords[key]
+            if ("deleted" in entry && entry.deleted == true){
+                //console.log("Info: Deleting tombstoned entry " + key) 
+                delete passwordData.passwords[key]
+            }
+        }
+    }
+    
     var ctxt = encryptData(passwordData, aesKey)
     
     var result = {salt: kdfSalt, ciphertext: ctxt}
@@ -305,7 +317,9 @@ function combineLists(localDict, remoteDict){
     for (interKey in intersection){
         var key = intersection[interKey]
         
-        if (localDict.passwords[key].lastModified > remoteDict.passwords[key].lastModified){
+        // This should be greater than or equal to
+        // This ensures tombstones get loaded correctly
+        if (localDict.passwords[key].lastModified >= remoteDict.passwords[key].lastModified){
             resultDict.passwords[key] = localDict.passwords[key]
         }else{
             resultDict.passwords[key] = remoteDict.passwords[key]
@@ -325,8 +339,57 @@ function addPassword(hostname, username, password){
     passwordData.passwords[newKey] = newEntry
 }
 
-function passwordList(){
-    return passwordData
+function deletePassword(key){
+    // We just tombstone it here
+    // Actual deletion occurs in savePasswordFile
+    var currentDate = Date.now()
+    
+    if (key in passwordData.passwords){
+        passwordData.passwords[key].deleted = true
+        passwordData.passwords[key].lastModified = currentDate
+        return true
+    }else{
+        return false
+    }
 }
 
-module.exports = {loadPasswordFile: loadPasswordFile, savePasswordFile: savePasswordFile, addPassword: addPassword, passwordList: passwordList}
+function editPassword(key, newHostname, newUsername, newPassword){
+    
+    var newKey = newUsername + "@" + newHostname
+    
+    if (newKey == key){
+        // We are replacing the entry entirely
+        var currentDate = Date.now()
+        var newEntry = {hostname: newHostname, username: newUsername, password: newPassword, lastModified: currentDate}
+        
+        passwordData.passwords[key] = newEntry
+        
+        return true
+        
+    }else{
+        // Key is different; delete old entry, add new one
+        deletePassword(key)
+        addPassword(newHostname, newUsername, newPassword)
+        
+        return true
+    }
+}
+
+function passwordList(){
+    // We need some logic here so we don't return tombstoned passwords
+    
+    var returnData = {passwords: {}}
+    
+    for (key in passwordData.passwords){
+        var entry = passwordData.passwords[key]
+        
+        if (!("deleted" in entry && entry.deleted == true)){
+            returnData.passwords[key] = entry
+        }
+        
+    }
+    
+    return returnData
+}
+
+module.exports = {editPassword: editPassword, deletePassword: deletePassword, loadPasswordFile: loadPasswordFile, savePasswordFile: savePasswordFile, addPassword: addPassword, passwordList: passwordList}
