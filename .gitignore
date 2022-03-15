@@ -1,0 +1,8 @@
+
+Server/node_modules/*
+Client/node_modules/*
+Client/certs/*
+Server/certs/*
+Server/data.json
+Client/data/*
+certs/*

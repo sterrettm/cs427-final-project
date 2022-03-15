@@ -1,4 +1,3 @@
-
 function loginButton(){
     username = document.getElementById('usernameInput').value
     password = document.getElementById('passwordInput').value
@@ -18,9 +17,15 @@ function loginButton(){
     
 }
 
+function googleLoginButton(){
+    shell.openExternal("http://localhost:8887/");
+}
+
 // Why do we setup handlers in JS instead of HTML?
 // To satisfy the Context-Security-Policy
 
 window.onload = function(e){
     document.getElementById("loginButton").addEventListener("click", loginButton)
+    document.getElementById("googleLoginButton").addEventListener("click", googleLoginButton)
 }
+
