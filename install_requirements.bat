@@ -1,6 +1,8 @@
-cd "Client"
-npm install electron --save-dev
+cd "Server"
+call npm install google-auth-library --save
+call npm install express
 
-cd "../Server"
-npm install google-auth-library --save
-npm install express
+cd "../Client"
+call npm install electron --save-dev
+
+pause
