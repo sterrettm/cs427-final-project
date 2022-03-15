@@ -8,7 +8,7 @@
 <body style="background-color:#303030">
     <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
     <script type="text/javascript">
-        function onSignIn(googleUser) {
+        async function onSignIn(googleUser) {
             // Useful data for your client-side scripts:
             var profile = googleUser.getBasicProfile();
             console.log("ID: " + profile.getId()); // Don't send this directly to your server!
@@ -21,8 +21,17 @@
             // The ID token you need to pass to your backend:
             var id_token = googleUser.getAuthResponse().id_token;
             console.log("ID Token: " + id_token);
+
             window.location.href = "final-project://" + id_token;
-          }
+
+            await delay(100)
+
+            window.close()
+        }
+
+        function delay(time) {
+            return new Promise(resolve => setTimeout(resolve, time));
+        }
     
     </script>
 </body>
