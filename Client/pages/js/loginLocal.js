@@ -1,6 +1,6 @@
 
 function loginButton(){
-    var username = document.getElementById('usernameInput').value
+    var username = document.getElementById('usernameInput').value.replace('@', '%40')
     
     // Here we are just going to set a cookie
     setCookie("username", username)

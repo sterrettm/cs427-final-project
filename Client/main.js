@@ -16,6 +16,7 @@ else {
 
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     
+    // Cut off the protocol and the end "/"
     var authToken = commandLine[3].slice(tokenProtocol.length + 3, -1)
 
     console.log("Generated Google SSO auth token: " + "\n" + authToken)
@@ -23,6 +24,8 @@ else {
     if (mainWindow) {
         if (mainWindow.isMinimized()) mainWindow.restore()
         mainWindow.focus()
+        var toExecute = "executeGoogleLogin(" + "\"" + authToken + "\");"
+        mainWindow.webContents.executeJavaScript(toExecute);
     }
   })
 

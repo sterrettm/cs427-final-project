@@ -15,8 +15,11 @@ function setCookie(name, value){
 
 window.addEventListener('load', (event) => {
     var usernameText = document.getElementById("usernameText")
+    
     if (usernameText != undefined){
-        usernameText.innerText = getCookie("username")
+        var username = getCookie("username")
+        username = username.replace('%40', '@')
+        usernameText.innerText = username
     }
 });
 

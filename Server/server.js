@@ -37,6 +37,10 @@ app.post('/login', function (req, res){
 	auth.loginUser(accountData, req, res)
 })
 
+app.post('/loginGoogle', function(req, res){
+    auth.loginUserGoogle(accountData, req, res)
+})
+
 app.post('/signup', function (req, res){
 	auth.signupUser(accountData, req, res)
 })
@@ -84,8 +88,8 @@ app.post('/upload', function(req, res){
 })
 
 var httpsServer = https.createServer({
-	key: fs.readFileSync('certs/key.pem'),
-	cert: fs.readFileSync('certs/cert.pem'),
+	key: fs.readFileSync('../certs/key.pem'),
+	cert: fs.readFileSync('../certs/cert.pem'),
 }, app)
 
 httpsServer.listen(port)

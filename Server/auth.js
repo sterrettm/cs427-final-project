@@ -1,5 +1,8 @@
 const crypto = require('crypto')
 const argon2 = require('argon2')
+const CLIENTID = "959670764613-h2h63b28iiovqilvsco09089vo61gmtv.apps.googleusercontent.com"
+const {OAuth2Client} = require('google-auth-library');
+const client = new OAuth2Client(CLIENTID);
 
 function isExpired(token){
     if (token.creationTime > Date.now()){
@@ -52,6 +55,62 @@ function validateUser(tokens, req, res){
         return username
     }else{
         return undefined
+    }
+}
+
+async function loginUserGoogle(userData, req, res){
+    var uncoded = Buffer.from(req.headers.authorization.split(' ')[1], 'base64').toString('ascii')
+    var password = uncoded
+    
+    console.log("Google login requested with AuthToken: \n" + password)
+
+    const ticket = await client.verifyIdToken({
+        idToken: password,
+        audience: CLIENTID
+    });
+
+    var payload = ticket.getPayload()
+
+    // If the audience of the payload matches the clientid, the token is valid
+    // https://developers.google.com/identity/sign-in/web/backend-auth
+    var isAuthenticated = payload.aud == CLIENTID
+
+    if(isAuthenticated){
+        const userid = payload['sub'];
+    
+        // Associate account with email
+        console.log("Email verified " + payload.email + " \nuserid: " + userid + "\nname: " + payload.name)
+
+        // TODO login user by generating token and adding this to the cookies
+        var rawToken = crypto.randomBytes(16)
+        var creationTime = Date.now()
+        // TODO I think this is fine, but might be better to use some builtin function to do this
+        var expiryTime = creationTime + (5 * 60 * 60 * 1000)
+        var token = {token: rawToken, creationTime: creationTime, expiryTime: expiryTime}
+
+        res.cookie('token', JSON.stringify(token), {httpOnly: true})
+        res.cookie('username', payload.email)
+        res.sendStatus(200);
+
+        tokens[payload.email] = token
+
+        if(payload.email in userData){
+
+        }else{
+            // "Sign up" the user
+
+            userData[payload.email] = {}
+            // TODO I am pretty sure this is a fine way to generate a salt,
+            // but a bit more research into this might be good
+            userData[payload.email].kdfSalt = crypto.randomBytes(16)
+        }
+    }
+    else{
+
+        console.log("Email could not be verified")
+        // Bad ticket
+        res.writeHead(403)
+        res.end();
     }
 }
 
@@ -119,6 +178,7 @@ async function signupUser(userData, req, res){
 module.exports = {
 	validateUser: validateUser,
 	loginUser: loginUser,
+    loginUserGoogle : loginUserGoogle,
 	//logoutUser: logoutUser,
 	signupUser: signupUser
 }

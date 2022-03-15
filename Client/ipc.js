@@ -75,6 +75,38 @@ else {
         }
     }
 
+    async function login_attempt_google(event, args){
+        var authToken = args.password
+
+        var options = {
+            host: "localhost",
+            path: "/loginGoogle",
+            method: "POST",
+            port: 32433,
+            rejectUnauthorized: rejectUnauthorized,
+            ca: [customCert]
+        }
+        
+        var req = https.request(options, res => {
+            if (res.statusCode === 200){
+                // TODO maybe we should load the data file from the server here
+                // not 100% sure where I should put that
+                
+                _setCookies(res.headers['set-cookie'])
+                
+                // We are now online, record this
+                remote = true
+                
+                event.sender.send('login_success', res.statusCode)
+            }else{
+                event.sender.send('login_fail', res.statusCode)
+            }
+        })
+
+        req.setHeader('Authorization', "Basic " + btoa(authToken))
+        req.end()
+    }
+
     async function login_attempt(event, args){
         
         var username = args.username
@@ -198,6 +230,7 @@ else {
 
     function ipcGenerator(ipcMain){
         ipcMain.on("login_attempt", (event, arg) => {login_attempt(event, arg)})
+        ipcMain.on("login_attempt_google", (event, arg) => {login_attempt_google(event, arg)})
         ipcMain.on("signup_attempt", (event, arg) => {signup_attempt(event, arg)})
         ipcMain.on("get_cookie", (event, arg) => {get_cookie(event, arg)})
         ipcMain.on("set_cookie", (event, arg) => {set_cookie(event, arg)})
@@ -210,6 +243,7 @@ else {
         ipcMain.on("is_remote", (event, arg) => {is_remote(event, arg)})
         ipcMain.on("use_template", (event, arg) => {use_template(event, arg)})
         ipcMain.on("logout", (event, arg) => {logout(event, arg)})
+    
     }
 
     /*ipcExport = {signup_attempt: signup_attempt, login_attempt: login_attempt}
