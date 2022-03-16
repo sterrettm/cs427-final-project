@@ -85,6 +85,8 @@ app.post('/upload', function(req, res){
         res.writeHead(403)
         res.end();
     }
+
+    utils.saveAccountData(dataFname, accountData)
 })
 
 var httpsServer = https.createServer({
